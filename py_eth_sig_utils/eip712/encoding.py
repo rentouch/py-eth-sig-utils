@@ -1,5 +1,5 @@
 from .. import utils
-from eth_abi import encode_single, encode_abi
+from eth_abi import encode
 
 def create_struct_definition(name, schema):
     schemaTypes = [ (schemaType['type'] + " " + schemaType['name']) for schemaType in schema ]
@@ -25,20 +25,20 @@ def create_schema(name, types):
     return create_struct_definition(cleanName, types[cleanName]) + "".join(dependencyDefinitions)
 
 def create_schema_hash(name, types):
-    return encode_single('bytes32', utils.sha3(create_schema(name, types)))
+    return encode(['bytes32'], [utils.sha3(create_schema(name, types))])
 
 def encode_value(dataType, value, types):
     if (dataType == 'string'):
-        return encode_single('bytes32', utils.sha3(value))
+        return encode(['bytes32'], [utils.sha3(value)])
     elif (dataType == 'bytes'):
-        return encode_single('bytes32', utils.sha3(utils.scan_bin(value)))
+        return encode(['bytes32'], [utils.sha3(utils.scan_bin(value))])
     elif (types.get(dataType)):
-        return encode_single('bytes32', utils.sha3(encode_data(dataType, value, types)))
+        return encode(['bytes32'], [utils.sha3(encode_data(dataType, value, types))])
     elif (dataType.endswith("]")):
         arrayType = dataType[:dataType.index("[")]
-        return encode_single('bytes32', utils.sha3(b"".join([ encode_data(arrayType, arrayValue, types) for arrayValue in value ])))
+        return encode(['bytes32'], [utils.sha3(b"".join([ encode_data(arrayType, arrayValue, types) for arrayValue in value ]))])
     else:
-        return encode_single(dataType, value)
+        return encode([dataType], [value])
 
 def encode_data(name, data, types):
     return create_schema_hash(name, types) + b"".join([ encode_value(schemaType['type'], data[schemaType['name']], types) for schemaType in types[name] ])
